@@ -45,7 +45,8 @@ class SearchResultsFrame(ttk.LabelFrame):
         self.canvas_window = self.canvas.create_window(
             (0, 0), 
             window=self.results_container, 
-            anchor=tk.NW
+            anchor=tk.NW,
+            width=self.canvas.winfo_width()  # Make frame fill canvas width
         )
         
         # Configure scrolling
@@ -59,6 +60,35 @@ class SearchResultsFrame(ttk.LabelFrame):
             "<Configure>", 
             lambda e: self.canvas.itemconfig(self.canvas_window, width=e.width)
         )
+
+        # Add mouse wheel scrolling
+        def _on_mousewheel(event):
+            # Respond to Linux (event.num) or Windows/macOS (event.delta) wheel event
+            if event.num == 4 or event.delta > 0:
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5 or event.delta < 0:
+                self.canvas.yview_scroll(1, "units")
+
+        # Bind mouse wheel for different platforms
+        def _bind_mousewheel(event):
+            # Bind scroll events
+            if self.canvas.yview() != (0.0, 1.0):  # Only bind if there's something to scroll
+                if self.canvas.winfo_height() < self.results_container.winfo_reqheight():
+                    # Linux (X11)
+                    self.canvas.bind_all("<Button-4>", _on_mousewheel)
+                    self.canvas.bind_all("<Button-5>", _on_mousewheel)
+                    # Windows/macOS
+                    self.canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        def _unbind_mousewheel(event):
+            # Unbind scroll events
+            self.canvas.unbind_all("<Button-4>")
+            self.canvas.unbind_all("<Button-5>")
+            self.canvas.unbind_all("<MouseWheel>")
+
+        # Bind enter/leave events to handle scroll binding
+        self.canvas.bind('<Enter>', _bind_mousewheel)
+        self.canvas.bind('<Leave>', _unbind_mousewheel)
     
     def clear(self):
         """Clear all search results"""
