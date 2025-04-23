@@ -33,7 +33,7 @@ The application uses OpenAI's CLIP (Contrastive Language-Image Pre-training) mod
 4. **Run the Application**:
    - In the same Command Prompt or Terminal window, type:
      ```
-     python clip.py
+     python clip_app.py
      ```
    - The application window should appear
 
@@ -77,3 +77,14 @@ While CLIP Image Search is powerful, it's important to understand its limitation
 - Written in Python with Tkinter for the user interface
 - Stores image embeddings in a PyTorch tensor file
 - Supports JPG, JPEG, and PNG image formats
+
+## For Developers
+
+The code is organized to make it easy to extend and modify:
+
+- **models/clip_processor.py**: Contains the core CLIP model functionality
+- **ui/main_window.py**: Implements the main application window
+- **ui/search_results.py**: Handles displaying and interacting with search results
+- **utils/**: Contains various utility functions for configuration, caching, and file operations
+
+To contribute or modify the application, you can focus on the specific module you want to enhance without affecting the rest of the codebase.
