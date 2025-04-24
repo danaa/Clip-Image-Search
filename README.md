@@ -11,10 +11,19 @@ CLIP Image Search is a desktop application that lets you search through your ima
 
 The application uses OpenAI's CLIP (Contrastive Language-Image Pre-training) model, which understands both images and text, allowing it to find images that match your descriptions even if the image files don't have descriptive names.
 
-## Installation Guide
+## System Requirements
+
+**Important: Currently Windows Only**
+
+CLIP Image Search is currently only supported on Windows operating systems. The application uses Windows-specific file paths for storing the model and cache data.
+
+- Not currently supported: macOS and Linux
+
+
+## Installation Guide (Windows)
 
 1. **Install Python**: 
-   - Go to [python.org](https://www.python.org/downloads/) and download the latest version for your operating system
+   - Go to [python.org](https://www.python.org/downloads/) and download the latest version for Windows
    - During installation, make sure to check the box that says "Add Python to PATH"
 
 2. **Download the Application**:
@@ -22,7 +31,7 @@ The application uses OpenAI's CLIP (Contrastive Language-Image Pre-training) mod
    - Extract the ZIP file to a folder of your choice
 
 3. **Install Required Components**:
-   - Open Command Prompt (Windows) or Terminal (Mac/Linux)
+   - Open Command Prompt
    - Navigate to the folder where you extracted the application (use the `cd` command)
    - Type the following command and press Enter:
      ```
@@ -31,11 +40,56 @@ The application uses OpenAI's CLIP (Contrastive Language-Image Pre-training) mod
    - This will automatically install all the necessary packages
 
 4. **Run the Application**:
-   - In the same Command Prompt or Terminal window, type:
+   - In the same Command Prompt window, type:
      ```
      python clip_app.py
      ```
    - The application window should appear
+
+## For Advanced Users: Installation with Virtual Environment (Windows)
+
+If you prefer to keep your Python environments isolated (recommended for developers), you can use a virtual environment:
+
+### Setting Up a Virtual Environment
+
+1. **Create a Virtual Environment**:
+   - Open Command Prompt
+   - Navigate to the folder where you extracted the application
+   - Create the virtual environment:
+     ```
+     python -m venv venv
+     ```
+
+2. **Activate the Virtual Environment**:
+   ```
+   venv\Scripts\activate
+   ```
+   - Your command prompt should now show "(venv)" at the beginning of the line
+
+3. **Install Required Components**:
+   - With the virtual environment activated, install the dependencies:
+     ```
+     pip install -r requirements.txt
+     ```
+
+4. **Run the Application**:
+   - With the virtual environment still activated:
+     ```
+     python clip_app.py
+     ```
+
+5. **Deactivate When Finished**:
+   - When you're done using the application, you can deactivate the virtual environment:
+     ```
+     deactivate
+     ```
+
+### Advantages of Using a Virtual Environment
+
+- Prevents conflicts between package versions
+- Keeps your system Python installation clean
+- Makes it easier to manage dependencies for different projects
+- Allows for more portable and reproducible development environments
 
 ## Important Notes About First Run
 
