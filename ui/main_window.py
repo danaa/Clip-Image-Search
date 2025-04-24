@@ -14,7 +14,7 @@ class SplashScreen(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title("CLIP Image Search")
-        self.geometry("500x300")
+        self.geometry("500x320")
         self.resizable(False, False)
         
         # Remove window decorations
@@ -24,8 +24,8 @@ class SplashScreen(tk.Toplevel):
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         x = (screen_width - 500) // 2
-        y = (screen_height - 300) // 2
-        self.geometry(f"500x300+{x}+{y}")
+        y = (screen_height - 320) // 2
+        self.geometry(f"500x320+{x}+{y}")
         
         # Make splash screen appear on top
         self.attributes('-topmost', True)
@@ -41,7 +41,7 @@ class SplashScreen(tk.Toplevel):
             font=('Arial', 20, 'bold'),
             bg='white'
         )
-        title.pack(pady=(30, 20))
+        title.pack(pady=(20, 15))
         
         # Loading message
         self.message = tk.Label(
@@ -52,7 +52,7 @@ class SplashScreen(tk.Toplevel):
             justify='center',
             bg='white'
         )
-        self.message.pack(pady=10)
+        self.message.pack(pady=5)
         
         # First run notice
         first_run_message = tk.Label(
@@ -65,7 +65,7 @@ class SplashScreen(tk.Toplevel):
             fg='#555555',
             bg='white'
         )
-        first_run_message.pack(pady=10)
+        first_run_message.pack(pady=5)
         
         # Progress bar - always in indeterminate mode
         self.progress = ttk.Progressbar(
@@ -74,7 +74,15 @@ class SplashScreen(tk.Toplevel):
             length=400,
             mode='indeterminate'
         )
-        self.progress.pack(pady=20)
+        self.progress.pack(pady=15)
+        
+        # Add cancel button
+        self.cancel_button = ttk.Button(
+            self.frame,
+            text="Cancel",
+            command=self.cancel_loading
+        )
+        self.cancel_button.pack(pady=10)
         
         # Start the progress bar animation with faster speed
         # Use a faster interval for more visible animation
@@ -89,6 +97,28 @@ class SplashScreen(tk.Toplevel):
         
         # Flag to track if this splash screen is valid
         self.is_valid = True
+    
+    def cancel_loading(self):
+        """Cancel the loading process and exit the application"""
+        self.message.config(text="Cancelling...")
+        self.update_idletasks()
+        
+        # Schedule a complete exit of the application
+        self.after(100, lambda: self._force_exit())
+    
+    def _force_exit(self):
+        """Force the application to close completely"""
+        import sys
+        try:
+            # Try to destroy parent first for clean exit
+            if self.parent:
+                self.parent.quit()  # Stop the mainloop
+                self.parent.destroy()  # Destroy all widgets
+        except:
+            pass
+        
+        # Force exit the Python process
+        sys.exit(0)
     
     def _schedule_updates(self):
         """Schedule regular UI updates to keep animations smooth"""

@@ -2,9 +2,18 @@
 CLIP model and image processing functionality
 """
 import os
+# Set environment variables before importing any huggingface/transformers modules
+os.environ['TRANSFORMERS_CACHE'] = os.path.join(os.path.expanduser("~"), "AppData", "Local", "CLIPImageSearch", "model")
+os.environ['HF_HOME'] = os.path.join(os.path.expanduser("~"), "AppData", "Local", "CLIPImageSearch", "model")
+os.environ['HUGGINGFACE_HUB_CACHE'] = os.path.join(os.path.expanduser("~"), "AppData", "Local", "CLIPImageSearch", "model")
+
 import torch
 from PIL import Image, UnidentifiedImageError
 from transformers import CLIPProcessor, CLIPModel
+import numpy as np
+
+import sys
+
 
 class ClipModel:
     """Handles CLIP model operations and image processing"""
@@ -16,15 +25,23 @@ class ClipModel:
             cache_file: Path to the embeddings cache file
             progress_callback: Function to call with progress updates
         """
-        self.cache_file = cache_file
+        # Use the application directory instead of user Documents
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            app_path = os.path.dirname(sys.executable)
+        else:
+            # Running in development environment
+            app_path = os.path.dirname(os.path.abspath(__file__))
+            app_path = os.path.dirname(app_path)  # Go up one level
+        
+        # Create directories for app data
+        self.app_data_dir = os.path.join(os.path.expanduser("~"), "AppData", "Local", "CLIPImageSearch")
+        self.model_dir = os.path.join(self.app_data_dir, "model")
+        os.makedirs(self.model_dir, exist_ok=True)
+        
+        # Always store cache file in AppData to avoid permission issues
+        self.cache_file = os.path.join(self.app_data_dir, cache_file)
         self.image_embeddings = {}
-        
-        # Define model storage location in user's documents
-        user_data_dir = os.path.join(os.path.expanduser("~"), "Documents", "CLIPImageSearch")
-        os.makedirs(user_data_dir, exist_ok=True)
-        
-        # Set model cache location
-        os.environ['TRANSFORMERS_CACHE'] = user_data_dir
         
         # Only initialize the model when needed
         MODEL_NAME = "openai/clip-vit-base-patch32"
@@ -33,9 +50,16 @@ class ClipModel:
         if progress_callback:
             progress_callback("Initializing CLIP model...")
         
-        # Initialize CLIP model
-        self.model = CLIPModel.from_pretrained(MODEL_NAME).eval()
-        self.processor = CLIPProcessor.from_pretrained(MODEL_NAME)
+        # Initialize CLIP model with explicit cache directory
+        self.model = CLIPModel.from_pretrained(
+            MODEL_NAME,
+            cache_dir=self.model_dir
+        ).eval()
+        
+        self.processor = CLIPProcessor.from_pretrained(
+            MODEL_NAME,
+            cache_dir=self.model_dir
+        )
         
         # When downloading model:
         if progress_callback:
