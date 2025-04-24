@@ -7,30 +7,222 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 from PIL import Image, ImageTk
 
-from models.clip_processor import ClipModel
-from utils.config import Config
-from ui.search_results import SearchResultsFrame
+
+class SplashScreen(tk.Toplevel):
+    """Splash screen with loading progress bar"""
+    
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("CLIP Image Search")
+        self.geometry("500x300")
+        self.resizable(False, False)
+        
+        # Remove window decorations
+        self.overrideredirect(True)
+        
+        # Center on screen
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = (screen_width - 500) // 2
+        y = (screen_height - 300) // 2
+        self.geometry(f"500x300+{x}+{y}")
+        
+        # Make splash screen appear on top
+        self.attributes('-topmost', True)
+        
+        # Create content frame with border
+        self.frame = tk.Frame(self, bg='white', borderwidth=2, relief='ridge')
+        self.frame.pack(fill='both', expand=True, padx=2, pady=2)
+        
+        # App title
+        title = tk.Label(
+            self.frame, 
+            text="CLIP Image Search", 
+            font=('Arial', 20, 'bold'),
+            bg='white'
+        )
+        title.pack(pady=(30, 20))
+        
+        # Loading message
+        self.message = tk.Label(
+            self.frame,
+            text="Starting application...",
+            font=('Arial', 12),
+            wraplength=450,
+            justify='center',
+            bg='white'
+        )
+        self.message.pack(pady=10)
+        
+        # First run notice
+        first_run_message = tk.Label(
+            self.frame,
+            text="Note: On first run, the application needs to download the CLIP model (approximately 600MB). "
+                 "This will only happen once and might take a few minutes depending on your internet connection.",
+            font=('Arial', 10),
+            wraplength=450,
+            justify='center',
+            fg='#555555',
+            bg='white'
+        )
+        first_run_message.pack(pady=10)
+        
+        # Progress bar - always in indeterminate mode
+        self.progress = ttk.Progressbar(
+            self.frame,
+            orient='horizontal',
+            length=400,
+            mode='indeterminate'
+        )
+        self.progress.pack(pady=20)
+        
+        # Start the progress bar animation with faster speed
+        # Use a faster interval for more visible animation
+        self.progress.start(10)
+        
+        # Force immediate UI update
+        self.update_idletasks()
+        self.update()
+        
+        # Schedule recurring UI updates to keep animation smooth
+        self._schedule_updates()
+        
+        # Flag to track if this splash screen is valid
+        self.is_valid = True
+    
+    def _schedule_updates(self):
+        """Schedule regular UI updates to keep animations smooth"""
+        if self.winfo_exists():
+            self.update_idletasks()
+            self.after(50, self._schedule_updates)
+    
+    def update_message(self, message):
+        """Update the loading message"""
+        if not self.is_valid:
+            return
+        try:
+            self.message.config(text=message)
+            self.update_idletasks()
+            self.update()
+        except tk.TclError:
+            self.is_valid = False
+            
+    # Keep the progress bar in indeterminate mode always
+    def set_progress(self, value=None):
+        """This is now just a placeholder to maintain compatibility"""
+        pass
+    
+    def switch_to_determinate(self, value=None):
+        """This is now just a placeholder to maintain compatibility"""
+        pass
+
 
 class ClipSearchWindow(tk.Tk):
     """Main application window for CLIP Image Search"""
     
     def __init__(self):
+        # Initialize the main Tk window
         super().__init__()
+        
+        # Hide main window during initialization
+        self.withdraw()
+        
+        # Create splash screen
+        self.splash = SplashScreen(self)
+        
+        # Give time for splash screen to fully initialize
+        self.after(100, self._continue_initialization)
+    
+    def _continue_initialization(self):
+        """Continue initialization after splash screen appears"""
+        # Set window properties
         self.title("CLIP Image Search")
         self.geometry("900x600")
         self.minsize(800, 500)
         
-        # Initialize configuration and model
+        # Initialize configuration
+        self.splash.update_message("Loading configuration...")
+        
+        # Now we import the modules we need
+        # This is done here to show the splash screen first
+        from models.clip_processor import ClipModel
+        from utils.config import Config
+        from ui.search_results import SearchResultsFrame
+        
         self.config_manager = Config()
-        self.clip_model = ClipModel()
         
         # UI state variables
         self.image_folder = self.config_manager.image_folder
         self.thumbnail_cache = {}
         self.processing_thread = None
         
+        # Import the SearchResultsFrame class
+        self.SearchResultsFrame = SearchResultsFrame
+        
         # Create UI components
+        self.splash.update_message("Creating user interface...")
         self.create_widgets()
+        
+        # Store ClipModel class for later use
+        self.ClipModel = ClipModel
+        
+        # Initialize model in background thread
+        threading.Thread(target=self.initialize_model, daemon=True).start()
+    
+    def initialize_model(self):
+        """Initialize CLIP model in background thread"""
+        try:
+            model_dir = os.path.join(os.path.expanduser("~"), "Documents", "CLIPImageSearch", "model")
+            model_path = os.path.join(model_dir, "models--openai--clip-vit-base-patch32")
+            
+            # Check if model already exists
+            if os.path.exists(model_path):
+                self.splash.update_message("Loading CLIP model...")
+            else:
+                # First indicate downloading will begin
+                self.splash.update_message("Downloading CLIP model (this may take several minutes)...")
+                
+                # After a few seconds, update the message with more information
+                self.after(5000, lambda: self.update_download_message("Downloading model files (1/4)..."))
+                self.after(15000, lambda: self.update_download_message("Processing model components (2/4)..."))
+                self.after(30000, lambda: self.update_download_message("Preparing model tokenizer (3/4)..."))
+                self.after(45000, lambda: self.update_download_message("Finalizing model setup (4/4)..."))
+            
+            # Initialize CLIP model with progress callback
+            def progress_callback(message, progress=None):
+                self.splash.update_message(message)
+                # Progress parameter is ignored as we're using indeterminate mode
+            
+            self.clip_model = self.ClipModel(progress_callback=progress_callback)
+            
+            # Close splash and show main window
+            self.splash.update_message("Ready!")
+            self.after(1000, self.show_main_window)
+            
+        except Exception as e:
+            try:
+                self.splash.update_message(f"Error: {str(e)}")
+                messagebox.showerror("Error", f"Failed to initialize CLIP model: {str(e)}")
+                self.after(3000, self.destroy)
+            except tk.TclError:
+                # If splash is already gone, just show error
+                messagebox.showerror("Error", f"Failed to initialize CLIP model: {str(e)}")
+                self.destroy()
+    
+    def update_download_message(self, message):
+        """Update download message if the splash screen is still active"""
+        if hasattr(self, 'splash') and self.splash.is_valid:
+            self.splash.update_message(message)
+    
+    def show_main_window(self):
+        """Close splash screen and show main window"""
+        try:
+            if hasattr(self, 'splash') and self.splash.is_valid:
+                self.splash.destroy()
+        except tk.TclError:
+            pass  # Splash already destroyed
+        
+        self.deiconify()
         
         # Check for changes in the folder on startup if a folder was loaded
         if self.image_folder:
@@ -87,7 +279,7 @@ class ClipSearchWindow(tk.Tk):
         )
         
         # Search results area
-        self.results_frame = SearchResultsFrame(
+        self.results_frame = self.SearchResultsFrame(
             main_frame, 
             get_thumbnail_func=self.get_thumbnail,
             open_image_func=self.open_image,

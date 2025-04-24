@@ -9,19 +9,45 @@ from transformers import CLIPProcessor, CLIPModel
 class ClipModel:
     """Handles CLIP model operations and image processing"""
     
-    def __init__(self, cache_file="clip_embeddings.pt"):
-        """Initialize the CLIP model
+    def __init__(self, cache_file="clip_embeddings.pt", progress_callback=None):
+        """Initialize the CLIP model with progress reporting
         
         Args:
             cache_file: Path to the embeddings cache file
+            progress_callback: Function to call with progress updates
         """
         self.cache_file = cache_file
         self.image_embeddings = {}
         
-        # Initialize CLIP model
+        # Define model storage location in user's documents
+        user_data_dir = os.path.join(os.path.expanduser("~"), "Documents", "CLIPImageSearch")
+        os.makedirs(user_data_dir, exist_ok=True)
+        
+        # Set model cache location
+        os.environ['TRANSFORMERS_CACHE'] = user_data_dir
+        
+        # Only initialize the model when needed
         MODEL_NAME = "openai/clip-vit-base-patch32"
+        
+        # Report progress if callback is provided
+        if progress_callback:
+            progress_callback("Initializing CLIP model...")
+        
+        # Initialize CLIP model
         self.model = CLIPModel.from_pretrained(MODEL_NAME).eval()
         self.processor = CLIPProcessor.from_pretrained(MODEL_NAME)
+        
+        # When downloading model:
+        if progress_callback:
+            progress_callback("Downloading model files...", 25)
+        
+        # After downloading:
+        if progress_callback:
+            progress_callback("Processing model...", 75)
+        
+        # When finished:
+        if progress_callback:
+            progress_callback("Model ready", 100)
         
         # Load cached embeddings if available
         self.load_cache()
