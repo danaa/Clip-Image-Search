@@ -202,11 +202,12 @@ class ClipSearchWindow(tk.Tk):
     def initialize_model(self):
         """Initialize CLIP model in background thread"""
         try:
-            model_dir = os.path.join(os.path.expanduser("~"), "Documents", "CLIPImageSearch", "model")
-            model_path = os.path.join(model_dir, "models--openai--clip-vit-base-patch32")
+            # Use the same path that clip_processor.py is using
+            app_data_dir = os.path.join(os.path.expanduser("~"), "AppData", "Local", "CLIPImageSearch")
+            model_dir = os.path.join(app_data_dir, "model")
             
             # Check if model already exists
-            if os.path.exists(model_path):
+            if os.path.exists(model_dir):
                 self.splash.update_message("Loading CLIP model...")
             else:
                 # First indicate downloading will begin
