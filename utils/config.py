@@ -30,7 +30,7 @@ class Config:
                 print(f"Error loading config: {e}")
         
         # Return default config if file doesn't exist or has errors
-        return {"image_folder": ""}
+        return {"image_folder": "", "max_results": 50}
     
     def _save_config(self):
         """Save current configuration to file"""
@@ -53,4 +53,19 @@ class Config:
             value: New image folder path
         """
         self._config["image_folder"] = value
+        self._save_config()
+    
+    @property
+    def max_results(self):
+        """Get the configured maximum number of search results"""
+        return self._config.get("max_results", 50)
+    
+    @max_results.setter
+    def max_results(self, value):
+        """Set the maximum number of search results and save config
+        
+        Args:
+            value: New maximum results count
+        """
+        self._config["max_results"] = value
         self._save_config() 

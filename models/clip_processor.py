@@ -157,7 +157,7 @@ class ClipModel:
                 removed_count += 1
         return removed_count
     
-    def search(self, prompt, limit=24):
+    def search(self, prompt, limit=100):
         """Search for images matching the text prompt
         
         Args:

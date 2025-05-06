@@ -115,10 +115,25 @@ class SearchResultsFrame(ttk.LabelFrame):
             no_results.pack(pady=50)
             return
         
-        # Display results in a grid
-        num_cols = 4
+        # Display results in a grid with 5 columns instead of 4
+        num_cols = 5
+        
+        # If there are many results, inform the user
+        if len(results) > 100:
+            info_label = ttk.Label(
+                self.results_container,
+                text=f"Showing {len(results)} results. Scroll down to see more.",
+                font=("", 10, "italic"),
+                foreground="gray"
+            )
+            info_label.grid(row=0, column=0, columnspan=num_cols, sticky="w", padx=5, pady=(0, 10))
+            result_start_row = 1
+        else:
+            result_start_row = 0
+        
         for i, (path, score) in enumerate(results):
             row, col = divmod(i, num_cols)
+            row += result_start_row  # Adjust for info label if present
             
             # Create frame for this result
             result_frame = ttk.Frame(self.results_container, padding=5)
@@ -134,8 +149,8 @@ class SearchResultsFrame(ttk.LabelFrame):
                 # Add click event to open the image
                 img_label.bind("<Double-Button-1>", lambda e, p=path: self.open_image(p))
             
-            # Filename and score
-            name_label = ttk.Label(result_frame, text=self._get_short_filename(path), wraplength=150)
+            # Filename and score - reduce wraplength for 5-column layout
+            name_label = ttk.Label(result_frame, text=self._get_short_filename(path), wraplength=120)
             name_label.pack()
             
             score_label = ttk.Label(result_frame, text=f"Score: {score:.4f}")
@@ -148,7 +163,7 @@ class SearchResultsFrame(ttk.LabelFrame):
             open_btn = ttk.Button(
                 btn_frame, 
                 text="Open", 
-                width=6, 
+                width=5, 
                 command=lambda p=path: self.open_image(p)
             )
             open_btn.pack(side=tk.LEFT, padx=2)
@@ -156,16 +171,15 @@ class SearchResultsFrame(ttk.LabelFrame):
             rename_btn = ttk.Button(
                 btn_frame, 
                 text="Rename", 
-                width=7,
+                width=6,
                 command=lambda p=path: self.rename_image(p)
             )
             rename_btn.pack(side=tk.LEFT, padx=2)
             
-            # Add delete button
             delete_btn = ttk.Button(
                 btn_frame, 
                 text="Delete", 
-                width=6,
+                width=5,
                 command=lambda p=path: self.delete_image(p)
             )
             delete_btn.pack(side=tk.LEFT, padx=2)

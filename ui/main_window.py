@@ -293,7 +293,47 @@ class ClipSearchWindow(tk.Tk):
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         search_entry.bind("<Return>", lambda e: self.search_images())
         
-        ttk.Button(search_frame, text="Search", command=self.search_images).pack(side=tk.LEFT)
+        # Add max results dropdown - make sure this appears
+        results_label = ttk.Label(search_frame, text="Max Results:")
+        results_label.pack(side=tk.LEFT, padx=(5, 5))
+        
+        # Debugging message to console
+        print("Creating results dropdown")
+        
+        # Create preset values for results dropdown
+        result_presets = ["10", "25", "50", "100", "200", "500", "All"]
+        
+        # Initialize with default value - with fallback
+        try:
+            default_value = str(self.config_manager.max_results)
+            if default_value not in result_presets and default_value != "10000":
+                default_value = "50"  # Fallback to 50 if not in presets
+            elif default_value == "10000":
+                default_value = "All"
+        except AttributeError:
+            # If max_results not yet available in Config class
+            default_value = "50"
+            
+        # Create a StringVar for the Combobox
+        self.max_results_var = tk.StringVar(value=default_value)
+        
+        # Create the Combobox for selecting number of results
+        results_dropdown = ttk.Combobox(
+            search_frame,
+            textvariable=self.max_results_var,
+            values=result_presets,
+            width=6,
+            state="readonly"  # User can only select from predefined values
+        )
+        results_dropdown.pack(side=tk.LEFT, padx=5)
+        print("Results dropdown packed")
+        
+        # Bind save on changes
+        results_dropdown.bind("<<ComboboxSelected>>", self.validate_and_save_max_results)
+        
+        # Add search button
+        search_button = ttk.Button(search_frame, text="Search", command=self.search_images)
+        search_button.pack(side=tk.LEFT, padx=5)
         
         # Status bar
         self.status_var = tk.StringVar(value="Ready")
@@ -613,11 +653,30 @@ class ClipSearchWindow(tk.Tk):
             self.status_var.set("No images processed yet. Please select a folder first.")
             return
         
-        self.status_var.set(f"Searching for: {prompt}")
+        # Get max results (ensure it's an integer)
+        selected_value = self.max_results_var.get()
+        print(f"Selected max results: {selected_value}")  # Debug print
+        
+        if selected_value == "All":
+            # Use a large number to represent "All"
+            max_results = 10000
+            self.status_var.set(f"Searching for: {prompt} (showing all results)")
+        else:
+            try:
+                max_results = int(selected_value)
+                print(f"Using max_results: {max_results}")  # Debug print
+            except ValueError:
+                print(f"Invalid value, defaulting to 50")  # Debug print
+                max_results = 50  # Default fallback
+                self.max_results_var.set("50")
+            self.status_var.set(f"Searching for: {prompt} (max {max_results} results)")
+        
         self.update_idletasks()
         
         # Perform the search
-        results = self.clip_model.search(prompt)
+        print(f"Calling search with limit={max_results}")  # Debug print
+        results = self.clip_model.search(prompt, limit=max_results)
+        print(f"Search returned {len(results)} results")  # Debug print
         
         # Display results
         self.results_frame.display_results(results)
@@ -640,3 +699,37 @@ class ClipSearchWindow(tk.Tk):
             self.config_manager.image_folder = self.image_folder
         
         super().destroy() 
+
+    def validate_and_save_max_results(self, event=None):
+        """Validate and save the maximum results setting"""
+        selected_value = self.max_results_var.get()
+        
+        # Handle "All" option
+        if selected_value == "All":
+            # We'll use a large number to represent "All"
+            value = 10000
+        else:
+            try:
+                value = int(selected_value)
+                
+                # Warn if value is too high
+                if value > 200 and selected_value != "All":
+                    warn_response = messagebox.askokcancel(
+                        "Warning",
+                        f"Requesting {value} results may slow down the application and consume more memory.\n\n"
+                        "Do you want to continue with this setting?",
+                        icon="warning"
+                    )
+                    
+                    if not warn_response:
+                        # User cancelled, reset to 200
+                        value = 200
+                        self.max_results_var.set("200")
+            except ValueError:
+                # If not a valid number, reset to previous value
+                value = 50  # Default value
+                self.max_results_var.set("50")
+        
+        # Save to config
+        self.config_manager.max_results = value
+        print(f"Saved max_results setting: {value}") 
