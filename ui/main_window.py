@@ -708,27 +708,36 @@ class ClipSearchWindow(tk.Tk):
         if selected_value == "All":
             # We'll use a large number to represent "All"
             value = 10000
+            show_warning = True  # Always show warning for "All"
         else:
             try:
                 value = int(selected_value)
-                
-                # Warn if value is too high
-                if value > 200 and selected_value != "All":
-                    warn_response = messagebox.askokcancel(
-                        "Warning",
-                        f"Requesting {value} results may slow down the application and consume more memory.\n\n"
-                        "Do you want to continue with this setting?",
-                        icon="warning"
-                    )
-                    
-                    if not warn_response:
-                        # User cancelled, reset to 200
-                        value = 200
-                        self.max_results_var.set("200")
+                # Determine if we should show a warning
+                show_warning = value > 200
             except ValueError:
                 # If not a valid number, reset to previous value
                 value = 50  # Default value
                 self.max_results_var.set("50")
+                show_warning = False
+        
+        # Show warning for large result sets
+        if show_warning:
+            warning_message = (
+                f"Requesting {'all' if selected_value == 'All' else value} results "
+                "may slow down the application and consume more memory.\n\n"
+                "Do you want to continue with this setting?"
+            )
+            
+            warn_response = messagebox.askokcancel(
+                "Warning",
+                warning_message,
+                icon="warning"
+            )
+            
+            if not warn_response:
+                # User cancelled, reset to 200
+                value = 200
+                self.max_results_var.set("200")
         
         # Save to config
         self.config_manager.max_results = value
